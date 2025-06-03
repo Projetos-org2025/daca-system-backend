@@ -6,7 +6,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <style>
         #map { height: 100vh; width: 100%; }
-        body { margin: 0; font-family: Arial, sans-serif; }
+        body { margin: 0; font-family: Arial, sans-serif; background: #fff; }
     </style>
 </head>
 <body>
@@ -23,6 +23,12 @@
 
         const url = `https://daca-system-backend.onrender.com/ultimas_todos/${login}`;
         const map = L.map('map').setView([0, 0], 2);
+
+        // Carrega corretamente o fundo do mapa (tile layer)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
         const marker = L.marker([0, 0]).addTo(map);
 
         fetch(url)
@@ -40,10 +46,6 @@
                 console.error("Erro ao buscar dados:", error);
                 alert("Erro ao carregar o mapa.");
             });
-
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
     </script>
 </body>
 </html>
