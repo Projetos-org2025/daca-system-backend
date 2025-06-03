@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Depends
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import Session, select
 from database import criar_banco, get_session
 from schemas import ClienteCreate, LocalizacaoCreate, VeiculoCreate
@@ -14,6 +15,15 @@ import requests
 
 app = FastAPI()
 criar_banco()
+
+# ✅ Middleware CORS para permitir acesso do mapa.html hospedado
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # ou especifique ["https://seusite.com"]
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Servir arquivos estáticos
 app.mount("/static", StaticFiles(directory="static"), name="static")
