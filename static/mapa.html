@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Mapa - DACA SYSTEM</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        #map { height: 100vh; width: 100%; }
+        body { margin: 0; font-family: Arial, sans-serif; }
+
+        /* Oculta os créditos no canto inferior direito */
+        .leaflet-control-attribution {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const login = params.get("login") || "usuario1";
+
+        const IP = "192.168.18.93";
+        const url = `http://${IP}:8000/ultimas_celular/${login}`;
+
+        const map = L.map('map').setView([0, 0], 19);
+
+        L.tileLayer('https://tile.openstreetmap.de/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(map);
+
+        const iconGoogle = L.icon({
+            iconUrl: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
+            iconSize: [32, 32],
+            iconAnchor: [16, 32],
+            popupAnchor: [0, -32]
+        });
+
+        let marcador = null;
+
+        async function carregarLocalizacao() {
+            try {
+                const resposta = await fetch(url);
+                const v = await resposta.json();
+
+                if (!v.latitude || !v.longitude) return;
+
+                if (marcador) map.removeLayer(marcador);
+
+                marcador = L.marker([v.latitude, v.longitude], { icon: iconGoogle })
+                    .addTo(map)
+                    .bindPopup(`
+                        <b>Dispositivo:</b> Seu aparelho<br>
+                        <b>Status:</b> <span style="color:${v.ignicao?.toLowerCase() === 'ligado' ? 'green' : 'red'}">${v.ignicao || 'N/A'}</span><br>
+                        <b>Velocidade:</b> ${v.velocidade?.toFixed(1) || 0} km/h<br>
+                        <b>Endereço:</b> ${v.endereco || 'N/A'}
+                    `);
+
+                map.setView([v.latitude, v.longitude], 19);
+            } catch (e) {
+                console.error("Erro ao carregar localização:", e);
+            }
+        }
+
+        carregarLocalizacao();
+        setInterval(carregarLocalizacao, 5000);
+    </script>
+</body>
+</html>
