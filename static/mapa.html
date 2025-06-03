@@ -7,11 +7,6 @@
     <style>
         #map { height: 100vh; width: 100%; }
         body { margin: 0; font-family: Arial, sans-serif; }
-
-        /* Oculta os créditos no canto inferior direito */
-        .leaflet-control-attribution {
-            display: none !important;
-        }
     </style>
 </head>
 <body>
@@ -20,53 +15,35 @@
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
         const params = new URLSearchParams(window.location.search);
-        const login = params.get("login") || "usuario1";
+        const login = params.get("login");
 
-        const IP = "192.168.18.93";
-        const url = `http://${IP}:8000/ultimas_celular/${login}`;
-
-        const map = L.map('map').setView([0, 0], 19);
-
-        L.tileLayer('https://tile.openstreetmap.de/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors',
-            maxZoom: 19
-        }).addTo(map);
-
-        const iconGoogle = L.icon({
-            iconUrl: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
-            iconSize: [32, 32],
-            iconAnchor: [16, 32],
-            popupAnchor: [0, -32]
-        });
-
-        let marcador = null;
-
-        async function carregarLocalizacao() {
-            try {
-                const resposta = await fetch(url);
-                const v = await resposta.json();
-
-                if (!v.latitude || !v.longitude) return;
-
-                if (marcador) map.removeLayer(marcador);
-
-                marcador = L.marker([v.latitude, v.longitude], { icon: iconGoogle })
-                    .addTo(map)
-                    .bindPopup(`
-                        <b>Dispositivo:</b> Seu aparelho<br>
-                        <b>Status:</b> <span style="color:${v.ignicao?.toLowerCase() === 'ligado' ? 'green' : 'red'}">${v.ignicao || 'N/A'}</span><br>
-                        <b>Velocidade:</b> ${v.velocidade?.toFixed(1) || 0} km/h<br>
-                        <b>Endereço:</b> ${v.endereco || 'N/A'}
-                    `);
-
-                map.setView([v.latitude, v.longitude], 19);
-            } catch (e) {
-                console.error("Erro ao carregar localização:", e);
-            }
+        if (!login) {
+            alert("Login não informado na URL. Use ?login=seu_login");
         }
 
-        carregarLocalizacao();
-        setInterval(carregarLocalizacao, 5000);
+        const url = `https://daca-system-backend.onrender.com/ultimas_todos/${login}`;
+        const map = L.map('map').setView([0, 0], 2);
+        const marker = L.marker([0, 0]).addTo(map);
+
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                if (Array.isArray(data) && data.length > 0) {
+                    const loc = data[0];
+                    marker.setLatLng([loc.latitude, loc.longitude]);
+                    map.setView([loc.latitude, loc.longitude], 16);
+                } else {
+                    alert("Nenhuma localização disponível.");
+                }
+            })
+            .catch(error => {
+                console.error("Erro ao buscar dados:", error);
+                alert("Erro ao carregar o mapa.");
+            });
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
     </script>
 </body>
 </html>
