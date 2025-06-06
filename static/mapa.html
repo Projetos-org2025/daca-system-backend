@@ -57,14 +57,16 @@
                         map.setView([loc.latitude, loc.longitude], 16);
 
                         const statusCor = loc.ignicao === "Ligado" ? "🟢 ONLINE" : "🔴 OFFLINE";
+                        const velocidadeFormatada = parseInt(loc.velocidade); // remove decimais
+
                         const popupTexto = `
                             <b>${statusCor}</b><br>
                             <b>Placa:</b> ${loc.placa}<br>
                             <b>Endereço:</b> ${loc.endereco}<br>
-                            <b>Velocidade:</b> ${loc.velocidade} km/h<br>
+                            <b>Velocidade:</b> ${velocidadeFormatada} km/h<br>
                             <b>Horário:</b> ${loc.data_hora}
                         `;
-                        marker.bindPopup(popupTexto).openPopup();
+                        marker.bindPopup(popupTexto); // agora só abre ao clicar
                     }
                 })
                 .catch(error => {
@@ -77,3 +79,4 @@
     </script>
 </body>
 </html>
+
