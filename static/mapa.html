@@ -55,6 +55,16 @@
                     if (loc && loc.latitude && loc.longitude) {
                         marker.setLatLng([loc.latitude, loc.longitude]);
                         map.setView([loc.latitude, loc.longitude], 16);
+
+                        const statusCor = loc.ignicao === "Ligado" ? "🟢 ONLINE" : "🔴 OFFLINE";
+                        const popupTexto = `
+                            <b>${statusCor}</b><br>
+                            <b>Placa:</b> ${loc.placa}<br>
+                            <b>Endereço:</b> ${loc.endereco}<br>
+                            <b>Velocidade:</b> ${loc.velocidade} km/h<br>
+                            <b>Horário:</b> ${loc.data_hora}
+                        `;
+                        marker.bindPopup(popupTexto).openPopup();
                     }
                 })
                 .catch(error => {
