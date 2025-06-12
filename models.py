@@ -28,7 +28,12 @@ login: Optional\[str] = None
 placa: Optional\[str] = None
 
 class CoordenadaCache(SQLModel, table=True):
-id: Optional\[int] = Field(default=None, primary\_key=True)
-latitude: float
-longitude: float
-endereco: str
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+
+    lat: str
+
+    lon: str
+
+    endereco: str
+
