@@ -12,14 +12,19 @@ from crud import (
 )
 from models import Localizacao, Veiculo
 import requests
+import os
+from dotenv import load_dotenv
+
+# Carregar variáveis do .env
+load_dotenv()
 
 app = FastAPI()
 criar_banco()
 
-# ✅ Middleware CORS para permitir acesso do mapa.html hospedado
+# Middleware CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # ou especifique ["https://seusite.com"]
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -32,7 +37,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 def abrir_mapa():
     return FileResponse("static/mapa.html")
 
-# ------------------ CLIENTE ------------------
+# CLIENTE
 
 @app.post("/registrar")
 def registrar(cliente: ClienteCreate, session: Session = Depends(get_session)):
@@ -42,7 +47,7 @@ def registrar(cliente: ClienteCreate, session: Session = Depends(get_session)):
 def obter_cliente(login: str, session: Session = Depends(get_session)):
     return buscar_cliente_por_login(session, login)
 
-# ------------------ VEÍCULO ------------------
+# VEÍCULO
 
 @app.post("/cadastrar_veiculo")
 def cadastrar_veiculo(veiculo: VeiculoCreate, session: Session = Depends(get_session)):
@@ -55,15 +60,16 @@ def veiculos_cliente(login: str, session: Session = Depends(get_session)):
     resultado = session.exec(stmt).all()
     return resultado
 
-# ------------------ GEOLOCALIZAÇÃO ------------------
+# GEOLOCALIZAÇÃO
 
 def obter_endereco_real(lat: float, lon: float) -> str:
     try:
-        url = f"https://nominatim.openstreetmap.org/reverse?lat={lat}&lon={lon}&format=json&accept-language=pt-BR"
-        headers = {
-            "User-Agent": "DacaSystem/1.0 (contato@dacasystem.com)"
-        }
-        resposta = requests.get(url, headers=headers, timeout=10)
+        api_key = os.getenv("LOCATIONIQ_API_KEY")
+        if not api_key:
+            return "Chave da API LocationIQ não configurada"
+
+        url = f"https://us1.locationiq.com/v1/reverse.php?key={api_key}&lat={lat}&lon={lon}&format=json"
+        resposta = requests.get(url, timeout=10)
         if resposta.status_code == 200:
             dados = resposta.json()
             return dados.get("display_name", "Endereço não encontrado")
@@ -72,7 +78,7 @@ def obter_endereco_real(lat: float, lon: float) -> str:
     except Exception:
         return "Erro ao obter endereço"
 
-# ------------------ LOCALIZAÇÃO ------------------
+# LOCALIZAÇÃO
 
 @app.post("/localizacao")
 def salvar_localizacao(localizacao: LocalizacaoCreate, session: Session = Depends(get_session)):
