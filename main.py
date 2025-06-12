@@ -10,12 +10,11 @@ from crud import (
     criar_veiculo, buscar_veiculo_por_imei,
     salvar_localizacao_db
 )
-from models import Localizacao, Veiculo
+from models import Localizacao, Veiculo, CoordenadaCache
 import requests
 import os
 from dotenv import load_dotenv
 
-# Carregar variáveis do .env
 load_dotenv()
 
 app = FastAPI()
@@ -57,12 +56,22 @@ def cadastrar_veiculo(veiculo: VeiculoCreate, session: Session = Depends(get_ses
 def veiculos_cliente(login: str, session: Session = Depends(get_session)):
     login = login.strip().lower()
     stmt = select(Veiculo).where(Veiculo.login_cliente.ilike(login))
-    resultado = session.exec(stmt).all()
-    return resultado
+    return session.exec(stmt).all()
 
-# GEOLOCALIZAÇÃO
+# GEOLOCALIZAÇÃO COM CACHE
 
-def obter_endereco_real(lat: float, lon: float) -> str:
+def obter_endereco_real(lat: float, lon: float, session: Session) -> str:
+    lat_str = f"{lat:.5f}"
+    lon_str = f"{lon:.5f}"
+
+    # Verificar se já está no cache
+    cache_stmt = select(CoordenadaCache).where(
+        CoordenadaCache.lat == lat_str, CoordenadaCache.lon == lon_str
+    )
+    cache_result = session.exec(cache_stmt).first()
+    if cache_result:
+        return cache_result.endereco
+
     try:
         api_key = os.getenv("LOCATIONIQ_API_KEY")
         if not api_key:
@@ -72,7 +81,14 @@ def obter_endereco_real(lat: float, lon: float) -> str:
         resposta = requests.get(url, timeout=10)
         if resposta.status_code == 200:
             dados = resposta.json()
-            return dados.get("display_name", "Endereço não encontrado")
+            endereco = dados.get("display_name", "Endereço não encontrado")
+
+            # Salvar no cache
+            novo_cache = CoordenadaCache(lat=lat_str, lon=lon_str, endereco=endereco)
+            session.add(novo_cache)
+            session.commit()
+
+            return endereco
         else:
             return "Endereço não encontrado"
     except Exception:
@@ -91,7 +107,7 @@ def salvar_localizacao(localizacao: LocalizacaoCreate, session: Session = Depend
         localizacao.placa = f"CELULAR_{localizacao.login.upper()}"
 
     if not localizacao.endereco:
-        localizacao.endereco = obter_endereco_real(localizacao.latitude, localizacao.longitude)
+        localizacao.endereco = obter_endereco_real(localizacao.latitude, localizacao.longitude, session)
 
     return salvar_localizacao_db(session, localizacao)
 
@@ -121,7 +137,6 @@ def ultima_localizacao(login: str, session: Session = Depends(get_session)):
 @app.get("/ultimas_todos/{login}")
 def ultimas_localizacoes(login: str, session: Session = Depends(get_session)):
     placa_celular = f"CELULAR_{login.upper()}"
-
     stmt = (
         select(Localizacao)
         .where(Localizacao.placa == placa_celular)
