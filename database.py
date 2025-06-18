@@ -1,13 +1,14 @@
 from sqlmodel import SQLModel, create_engine, Session
-from sqlalchemy.pool import StaticPool
+from dotenv import load_dotenv
+import os
 
-DATABASE_URL = "sqlite:///rastreador.db"
+load_dotenv()  # Carrega variáveis do .env
+
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 engine = create_engine(
     DATABASE_URL,
-    echo=True,
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool
+    echo=False  # Deixe True se quiser ver as queries no terminal
 )
 
 def criar_banco():
